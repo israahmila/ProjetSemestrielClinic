@@ -1,17 +1,11 @@
-"""
-User Model
-Handles authentication and user queries.
-"""
+
 from database.db_connection import get_connection
 import hashlib
 
 class User:
     @staticmethod
     def authenticate(username, password):
-        """
-        Validates login credentials via SHA-256 hashing.
-        Returns the user dictionary if valid, {"error": "DB_DOWN"} if db fails, else None.
-        """
+        
         conn = get_connection()
         if not conn: return {"error": "DB_DOWN"}
         try:

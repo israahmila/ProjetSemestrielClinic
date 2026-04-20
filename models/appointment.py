@@ -1,7 +1,4 @@
-"""
-Appointment Model
-Handles all database operations for Appointments.
-"""
+
 from database.db_connection import get_connection
 
 class Appointment:

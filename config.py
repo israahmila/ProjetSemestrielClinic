@@ -1,7 +1,4 @@
-"""
-Database Configuration File
-Contains credentials for MySQL connection.
-"""
+
 
 DB_CONFIG = {
     'host': 'localhost',

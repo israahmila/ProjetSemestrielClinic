@@ -1,7 +1,3 @@
-"""
-Prescription Model
-Handles all database operations for Prescriptions.
-"""
 from database.db_connection import get_connection
 
 class Prescription:

@@ -1,7 +1,4 @@
-"""
-Patient Model
-Handles all database operations for Patients.
-"""
+
 from database.db_connection import get_connection
 
 class Patient:

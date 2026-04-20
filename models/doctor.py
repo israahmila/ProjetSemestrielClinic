@@ -1,7 +1,4 @@
-"""
-Doctor Model
-Handles all database operations for Doctors.
-"""
+
 from database.db_connection import get_connection
 
 class Doctor:
