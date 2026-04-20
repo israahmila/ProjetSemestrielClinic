@@ -5,16 +5,7 @@ from models.prescription import Prescription
 from models.appointment import Appointment
 from models.patient import Patient
 
-# React Colors
-C_BG_BASE = '#0A0E27'
-C_BG_CARD = '#0F172A'
-C_PRIMARY = '#0EA5E9'
-C_PRIMARY_HOVER = '#0284C7'
-C_TEXT_PRIMARY = '#F1F5F9'
-C_TEXT_MUTED = '#94A3B8'
-C_BORDER = '#1E293B'
-C_BORDER_GLOW = '#38BDF8'
-C_ERROR = '#EF4444'
+from theme import *
 
 class PrescriptionsView(ctk.CTkFrame):
     def __init__(self, parent, controller):
@@ -54,11 +45,11 @@ class PrescriptionsView(ctk.CTkFrame):
         self.combo_appointment = ctk.CTkComboBox(inner, values=[], **combo_args)
         self.combo_appointment.grid(row=2, column=0, columnspan=2, pady=(0, 10), sticky="ew")
         
-        self.entry_medication = ctk.CTkEntry(inner, placeholder_text="Medication Name", **input_args)
-        self.entry_medication.grid(row=3, column=0, columnspan=2, pady=10, sticky="ew")
+        self.entry_diagnosis = ctk.CTkEntry(inner, placeholder_text="Diagnosis", **input_args)
+        self.entry_diagnosis.grid(row=3, column=0, columnspan=2, pady=10, sticky="ew")
         
-        self.entry_dosage = ctk.CTkEntry(inner, placeholder_text="Dosage", **input_args)
-        self.entry_dosage.grid(row=4, column=0, columnspan=2, pady=10, sticky="ew")
+        self.entry_medication = ctk.CTkEntry(inner, placeholder_text="Medication", **input_args)
+        self.entry_medication.grid(row=4, column=0, columnspan=2, pady=10, sticky="ew")
         
         self.lbl_notes = ctk.CTkLabel(inner, text="Notes:", text_color=C_TEXT_PRIMARY, font=self.main_font)
         self.lbl_notes.grid(row=5, column=0, columnspan=2, sticky="w", pady=(5, 0))
@@ -95,17 +86,11 @@ class PrescriptionsView(ctk.CTkFrame):
         self.btn_export = ctk.CTkButton(top_bar, text="⬇ Export CSV", command=self.export_csv, width=120, fg_color=C_PRIMARY, hover_color=C_PRIMARY_HOVER, font=self.bold_font, height=40)
         self.btn_export.grid(row=0, column=1)
 
-        style = ttk.Style()
-        style.theme_use("default")
-        style.configure("Treeview", background=C_BG_CARD, foreground=C_TEXT_PRIMARY, rowheight=35, fieldbackground=C_BG_CARD, borderwidth=0, font=('Helvetica', 12))
-        style.map("Treeview", background=[('selected', C_PRIMARY)], foreground=[('selected', C_TEXT_PRIMARY)])
-        style.configure("Treeview.Heading", background=C_BG_BASE, foreground=C_TEXT_MUTED, relief="flat", font=('Helvetica', 12, 'bold'))
-        style.map("Treeview.Heading", background=[('active', C_BORDER)])
-        
-        columns = ("id", "patient", "date", "medication", "dosage", "notes", "appid")
+
+        columns = ("id", "patient", "date", "diagnosis", "medication", "notes", "appid")
         self.tree = ttk.Treeview(self.table_frame, columns=columns, show="headings")
         
-        headings = ["ID", "Patient", "Date", "Medication", "Dosage", "Notes", "AppID"]
+        headings = ["ID", "Patient", "Date", "Diagnosis", "Medication", "Notes", "AppID"]
         widths = [50, 150, 100, 150, 100, 200, 0]
         for col, head, w in zip(columns, headings, widths):
             self.tree.heading(col, text=head, command=lambda c=col: self.sort_treeview(c))
@@ -135,7 +120,7 @@ class PrescriptionsView(ctk.CTkFrame):
         for item in self.tree.get_children():
             self.tree.delete(item)
         for p in Prescription.get_all():
-            self.tree.insert("", "end", values=(p['id'], p['patient_name'], p['appointment_date'], p['medication'], p['dosage'], p['notes'], p['appointment_id']))
+            self.tree.insert("", "end", values=(p['id'], p['patient_name'], p['appointment_date'], p['diagnosis'], p['medication'], p['notes'], p['appointment_id']))
             
     def on_search(self, event):
         keyword = self.entry_search.get().strip()
@@ -145,7 +130,7 @@ class PrescriptionsView(ctk.CTkFrame):
         for item in self.tree.get_children():
             self.tree.delete(item)
         for p in Prescription.search(keyword):
-            self.tree.insert("", "end", values=(p['id'], p['patient_name'], p['appointment_date'], p['medication'], p['dosage'], p['notes'], p['appointment_id']))
+            self.tree.insert("", "end", values=(p['id'], p['patient_name'], p['appointment_date'], p['diagnosis'], p['medication'], p['notes'], p['appointment_id']))
 
     def on_tree_select(self, event):
         selected = self.tree.selection()
@@ -157,44 +142,49 @@ class PrescriptionsView(ctk.CTkFrame):
         if app_val in self.appointments_map:
             self.combo_appointment.set(app_val)
             
+        self.entry_diagnosis.delete(0, 'end')
         self.entry_medication.delete(0, 'end')
-        self.entry_dosage.delete(0, 'end')
         self.text_notes.delete('1.0', 'end')
         
-        self.entry_medication.insert(0, values[3])
-        self.entry_dosage.insert(0, values[4])
+        self.entry_diagnosis.insert(0, values[3])
+        self.entry_medication.insert(0, values[4])
         self.text_notes.insert('1.0', values[5] if values[5] != 'None' else '')
         
     def clear_form(self):
         self.selected_prescription_id = None
+        self.entry_diagnosis.delete(0, 'end')
         self.entry_medication.delete(0, 'end')
-        self.entry_dosage.delete(0, 'end')
         self.text_notes.delete('1.0', 'end')
         if self.appointments_map: self.combo_appointment.set(list(self.appointments_map.keys())[0])
         self.lbl_error.configure(text="")
 
     def save_prescription(self):
         app_key = self.combo_appointment.get()
+        diagnosis = self.entry_diagnosis.get().strip()
         medication = self.entry_medication.get().strip()
-        dosage = self.entry_dosage.get().strip()
         notes = self.text_notes.get('1.0', 'end-1c').strip()
         
-        if not app_key or not medication or not dosage:
-            self.lbl_error.configure(text="Required: Appointment, Medication, Dosage")
+        if not app_key or not diagnosis or not medication:
+            self.lbl_error.configure(text="Required: Appointment, Diagnosis, Medication")
             return
             
         app_id = self.appointments_map.get(app_key)
         
         if self.selected_prescription_id:
-            Prescription.update(self.selected_prescription_id, app_id, medication, dosage, notes)
+            success = Prescription.update(self.selected_prescription_id, app_id, diagnosis, medication, notes)
         else:
-            Prescription.add(app_id, medication, dosage, notes)
+            success = Prescription.add(app_id, diagnosis, medication, notes)
             
-        self.clear_form()
-        self.refresh_data()
+        if success:
+            self.clear_form()
+            self.refresh_data()
+        else:
+            self.lbl_error.configure(text="Failed to save. Check DB connection.")
 
     def delete_prescription(self):
-        if not self.selected_prescription_id: return
+        if not self.selected_prescription_id:
+            messagebox.showwarning("Warning", "Please select a prescription to delete.")
+            return
         if messagebox.askyesno("Confirm", "Delete this prescription?"):
             Prescription.delete(self.selected_prescription_id)
             self.clear_form()
@@ -203,13 +193,16 @@ class PrescriptionsView(ctk.CTkFrame):
     def export_csv(self):
         file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
         if not file_path: return
-        with open(file_path, 'w', newline='') as file:
-            writer = csv.writer(file)
-            writer.writerow(["ID", "Patient", "Date", "Medication", "Dosage", "Notes"])
-            for child in self.tree.get_children():
-                vals = self.tree.item(child)["values"]
-                writer.writerow(vals[:6])
-        messagebox.showinfo("Success", "Data exported.")
+        try:
+            with open(file_path, 'w', newline='') as file:
+                writer = csv.writer(file)
+                writer.writerow(["ID", "Patient", "Date", "Diagnosis", "Medication", "Notes"])
+                for child in self.tree.get_children():
+                    vals = self.tree.item(child)["values"]
+                    writer.writerow(vals[:6])
+            messagebox.showinfo("Success", "Data exported.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to export: {e}")
 
     def sort_treeview(self, col):
         if col == "appid": return

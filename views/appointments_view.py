@@ -6,16 +6,7 @@ from models.patient import Patient
 from models.doctor import Doctor
 import re
 
-# React Colors
-C_BG_BASE = '#0A0E27'
-C_BG_CARD = '#0F172A'
-C_PRIMARY = '#0EA5E9'
-C_PRIMARY_HOVER = '#0284C7'
-C_TEXT_PRIMARY = '#F1F5F9'
-C_TEXT_MUTED = '#94A3B8'
-C_BORDER = '#1E293B'
-C_BORDER_GLOW = '#38BDF8'
-C_ERROR = '#EF4444'
+from theme import *
 
 class AppointmentsView(ctk.CTkFrame):
     def __init__(self, parent, controller):
@@ -100,13 +91,7 @@ class AppointmentsView(ctk.CTkFrame):
         self.btn_export = ctk.CTkButton(top_bar, text="⬇ Export CSV", command=self.export_csv, width=120, fg_color=C_PRIMARY, hover_color=C_PRIMARY_HOVER, font=self.bold_font, height=40)
         self.btn_export.grid(row=0, column=1)
 
-        style = ttk.Style()
-        style.theme_use("default")
-        style.configure("Treeview", background=C_BG_CARD, foreground=C_TEXT_PRIMARY, rowheight=35, fieldbackground=C_BG_CARD, borderwidth=0, font=('Helvetica', 12))
-        style.map("Treeview", background=[('selected', C_PRIMARY)], foreground=[('selected', C_TEXT_PRIMARY)])
-        style.configure("Treeview.Heading", background=C_BG_BASE, foreground=C_TEXT_MUTED, relief="flat", font=('Helvetica', 12, 'bold'))
-        style.map("Treeview.Heading", background=[('active', C_BORDER)])
-        
+
         columns = ("id", "patient", "doctor", "date", "time", "status", "pid", "did")
         self.tree = ttk.Treeview(self.table_frame, columns=columns, show="headings")
         
@@ -207,19 +192,28 @@ class AppointmentsView(ctk.CTkFrame):
             self.lbl_error.configure(text="Date must be YYYY-MM-DD")
             return
             
+        if not re.match(r"^\d{2}:\d{2}(:\d{2})?$", time):
+            self.lbl_error.configure(text="Time must be HH:MM:SS or HH:MM")
+            return
+            
         pat_id = self.patients_map.get(pat_key)
         doc_id = self.doctors_map.get(doc_key)
         
         if self.selected_appointment_id:
-            Appointment.update(self.selected_appointment_id, pat_id, doc_id, date, time, status)
+            success = Appointment.update(self.selected_appointment_id, pat_id, doc_id, date, time, status)
         else:
-            Appointment.add(pat_id, doc_id, date, time, status)
+            success = Appointment.add(pat_id, doc_id, date, time, status)
             
-        self.clear_form()
-        self.refresh_data()
+        if success:
+            self.clear_form()
+            self.refresh_data()
+        else:
+            self.lbl_error.configure(text="Failed to save. Check DB connection.")
 
     def delete_appointment(self):
-        if not self.selected_appointment_id: return
+        if not self.selected_appointment_id:
+            messagebox.showwarning("Warning", "Please select an appointment to delete.")
+            return
         if messagebox.askyesno("Confirm", "Delete this appointment?"):
             Appointment.delete(self.selected_appointment_id)
             self.clear_form()
@@ -228,13 +222,16 @@ class AppointmentsView(ctk.CTkFrame):
     def export_csv(self):
         file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
         if not file_path: return
-        with open(file_path, 'w', newline='') as file:
-            writer = csv.writer(file)
-            writer.writerow(["ID", "Patient", "Doctor", "Date", "Time", "Status"])
-            for child in self.tree.get_children():
-                vals = self.tree.item(child)["values"]
-                writer.writerow(vals[:6])
-        messagebox.showinfo("Success", "Data exported.")
+        try:
+            with open(file_path, 'w', newline='') as file:
+                writer = csv.writer(file)
+                writer.writerow(["ID", "Patient", "Doctor", "Date", "Time", "Status"])
+                for child in self.tree.get_children():
+                    vals = self.tree.item(child)["values"]
+                    writer.writerow(vals[:6])
+            messagebox.showinfo("Success", "Data exported.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to export: {e}")
 
     def sort_treeview(self, col):
         if col in ("pid", "did"): return

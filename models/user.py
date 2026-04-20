@@ -10,10 +10,10 @@ class User:
     def authenticate(username, password):
         """
         Validates login credentials via SHA-256 hashing.
-        Returns the user dictionary if valid, else None.
+        Returns the user dictionary if valid, {"error": "DB_DOWN"} if db fails, else None.
         """
         conn = get_connection()
-        if not conn: return None
+        if not conn: return {"error": "DB_DOWN"}
         try:
             cursor = conn.cursor(dictionary=True)
             hashed_pw = hashlib.sha256(password.encode()).hexdigest()

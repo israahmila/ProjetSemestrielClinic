@@ -4,16 +4,7 @@ import csv
 from models.patient import Patient
 import re
 
-# React Colors
-C_BG_BASE = '#0A0E27'
-C_BG_CARD = '#0F172A'
-C_PRIMARY = '#0EA5E9'
-C_PRIMARY_HOVER = '#0284C7'
-C_TEXT_PRIMARY = '#F1F5F9'
-C_TEXT_MUTED = '#94A3B8'
-C_BORDER = '#1E293B'
-C_BORDER_GLOW = '#38BDF8'
-C_ERROR = '#EF4444'
+from theme import *
 
 class PatientsView(ctk.CTkFrame):
     def __init__(self, parent, controller):
@@ -36,7 +27,7 @@ class PatientsView(ctk.CTkFrame):
         self.form_frame = ctk.CTkFrame(self, corner_radius=16, fg_color=C_BG_CARD, border_width=1, border_color=C_BORDER_GLOW)
         self.form_frame.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
         
-        # Inner frame to center the form vertically & horizontally
+        #
         inner = ctk.CTkFrame(self.form_frame, fg_color="transparent")
         inner.pack(expand=True, fill="both", padx=30, pady=30)
         inner.grid_columnconfigure(0, weight=1)
@@ -98,12 +89,7 @@ class PatientsView(ctk.CTkFrame):
         self.btn_export = ctk.CTkButton(top_bar, text="⬇ Export CSV", command=self.export_csv, width=120, fg_color=C_PRIMARY, hover_color=C_PRIMARY_HOVER, font=self.bold_font, height=40)
         self.btn_export.grid(row=0, column=1)
 
-        style = ttk.Style()
-        style.theme_use("default")
-        style.configure("Treeview", background=C_BG_CARD, foreground=C_TEXT_PRIMARY, rowheight=35, fieldbackground=C_BG_CARD, borderwidth=0, font=('Helvetica', 12))
-        style.map("Treeview", background=[('selected', C_PRIMARY)], foreground=[('selected', C_TEXT_PRIMARY)])
-        style.configure("Treeview.Heading", background=C_BG_BASE, foreground=C_TEXT_MUTED, relief="flat", font=('Helvetica', 12, 'bold'))
-        style.map("Treeview.Heading", background=[('active', C_BORDER)])
+
         
         columns = ("id", "first_name", "last_name", "dob", "phone", "email", "gender")
         self.tree = ttk.Treeview(self.table_frame, columns=columns, show="headings")
@@ -176,7 +162,7 @@ class PatientsView(ctk.CTkFrame):
         if not re.match(r"^\d{4}-\d{2}-\d{2}$", dob):
             self.lbl_error.configure(text="DOB must be YYYY-MM-DD.")
             return False
-        if email and not re.match(r"^[\w\.\+\-]+\@[\w]+\.[a-z]{2,3}$", email):
+        if email and not re.match(r"^[\w\.\+\-]+\@[\w]+\.[a-z]{2,}$", email):
             self.lbl_error.configure(text="Invalid email format.")
             return False
         self.lbl_error.configure(text="")
@@ -242,7 +228,7 @@ class PatientsView(ctk.CTkFrame):
             
         self.sort_reverse = not self.sort_reverse
         
-        # Add sort icon
+        
         for c in self.tree["columns"]:
             original_text = self.tree.heading(c, "text").replace(" ▲", "").replace(" ▼", "")
             if c == col:

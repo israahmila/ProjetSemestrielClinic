@@ -1,8 +1,7 @@
--- Create database
+
 CREATE DATABASE IF NOT EXISTS clinic_db;
 USE clinic_db;
 
--- Users table (Role based access: admin, receptionist)
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
@@ -10,28 +9,25 @@ CREATE TABLE IF NOT EXISTS users (
     role ENUM('admin', 'receptionist') NOT NULL DEFAULT 'receptionist'
 );
 
--- Patients table
 CREATE TABLE IF NOT EXISTS patients (
     id INT AUTO_INCREMENT PRIMARY KEY,
     first_name VARCHAR(50) NOT NULL,
     last_name VARCHAR(50) NOT NULL,
     dob DATE NOT NULL,
     phone VARCHAR(20),
-    email VARCHAR(100),
+    email VARCHAR(100) UNIQUE,
     gender ENUM('Male', 'Female', 'Other') NOT NULL
 );
 
--- Doctors table
 CREATE TABLE IF NOT EXISTS doctors (
     id INT AUTO_INCREMENT PRIMARY KEY,
     first_name VARCHAR(50) NOT NULL,
     last_name VARCHAR(50) NOT NULL,
     speciality VARCHAR(100) NOT NULL,
     phone VARCHAR(20),
-    email VARCHAR(100)
+    email VARCHAR(100) UNIQUE
 );
 
--- Appointments table
 CREATE TABLE IF NOT EXISTS appointments (
     id INT AUTO_INCREMENT PRIMARY KEY,
     patient_id INT NOT NULL,
@@ -43,7 +39,6 @@ CREATE TABLE IF NOT EXISTS appointments (
     FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE CASCADE
 );
 
--- Prescriptions table
 CREATE TABLE IF NOT EXISTS prescriptions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     appointment_id INT NOT NULL,
@@ -54,13 +49,10 @@ CREATE TABLE IF NOT EXISTS prescriptions (
     FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE CASCADE
 );
 
--- Insert default admin user (password: admin123, hashed in SHA-256)
--- 'admin123' -> 240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9
 INSERT INTO users (username, password_hash, role) 
 VALUES ('admin', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'admin')
 ON DUPLICATE KEY UPDATE username=username;
 
--- Insert realistic test data
 INSERT INTO patients (first_name, last_name, dob, phone, email, gender) VALUES
 ('John', 'Doe', '1985-06-15', '1234567890', 'john.doe@email.com', 'Male'),
 ('Jane', 'Smith', '1992-09-21', '0987654321', 'jane.smith@email.com', 'Female'),

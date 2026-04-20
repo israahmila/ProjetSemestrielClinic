@@ -1,15 +1,7 @@
 import customtkinter as ctk
 from models.user import User
 
-# React Colors
-C_BG_BASE = '#0A0E27'
-C_BG_CARD = '#0F172A'
-C_PRIMARY = '#0EA5E9'
-C_PRIMARY_HOVER = '#0284C7'
-C_TEXT_PRIMARY = '#F1F5F9'
-C_TEXT_MUTED = '#94A3B8'
-C_BORDER_GLOW = '#38BDF8'
-C_ERROR = '#EF4444'
+from theme import *
 
 class LoginView(ctk.CTk):
     def __init__(self):
@@ -19,7 +11,7 @@ class LoginView(ctk.CTk):
         self.resizable(False, False)
         self.configure(fg_color=C_BG_BASE)
         
-        # Center the window on screen
+        
         self.update_idletasks()
         try:
             self.eval('tk::PlaceWindow . center')
@@ -30,11 +22,11 @@ class LoginView(ctk.CTk):
         self.logged_in_user = None
         self.logged_in_role = None
 
-        # Build UI
+        
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
-        # Glassmorphism Card
+        
         self.frame = ctk.CTkFrame(self, corner_radius=16, fg_color=C_BG_CARD, border_width=1, border_color=C_BORDER_GLOW)
         self.frame.grid(row=0, column=0, padx=40, pady=50, sticky="nsew")
         self.frame.grid_rowconfigure(0, weight=1)
@@ -70,7 +62,9 @@ class LoginView(ctk.CTk):
             return
 
         user_data = User.authenticate(username, password)
-        if user_data:
+        if user_data and "error" in user_data and user_data["error"] == "DB_DOWN":
+            self.lbl_error.configure(text="Cannot connect to database.")
+        elif user_data:
             self.is_authenticated = True
             self.logged_in_user = user_data['username']
             self.logged_in_role = user_data['role']

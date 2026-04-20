@@ -3,16 +3,8 @@ from tkinter import ttk, messagebox, filedialog
 import csv
 from models.doctor import Doctor
 
-# React Colors
-C_BG_BASE = '#0A0E27'
-C_BG_CARD = '#0F172A'
-C_PRIMARY = '#0EA5E9'
-C_PRIMARY_HOVER = '#0284C7'
-C_TEXT_PRIMARY = '#F1F5F9'
-C_TEXT_MUTED = '#94A3B8'
-C_BORDER = '#1E293B'
-C_BORDER_GLOW = '#38BDF8'
-C_ERROR = '#EF4444'
+import re
+from theme import *
 
 class DoctorsView(ctk.CTkFrame):
     def __init__(self, parent, controller):
@@ -90,13 +82,7 @@ class DoctorsView(ctk.CTkFrame):
         self.btn_export = ctk.CTkButton(top_bar, text="⬇ Export CSV", command=self.export_csv, width=120, fg_color=C_PRIMARY, hover_color=C_PRIMARY_HOVER, font=self.bold_font, height=40)
         self.btn_export.grid(row=0, column=1)
 
-        style = ttk.Style()
-        style.theme_use("default")
-        style.configure("Treeview", background=C_BG_CARD, foreground=C_TEXT_PRIMARY, rowheight=35, fieldbackground=C_BG_CARD, borderwidth=0, font=('Helvetica', 12))
-        style.map("Treeview", background=[('selected', C_PRIMARY)], foreground=[('selected', C_TEXT_PRIMARY)])
-        style.configure("Treeview.Heading", background=C_BG_BASE, foreground=C_TEXT_MUTED, relief="flat", font=('Helvetica', 12, 'bold'))
-        style.map("Treeview.Heading", background=[('active', C_BORDER)])
-        
+
         columns = ("id", "first_name", "last_name", "speciality", "phone", "email")
         self.tree = ttk.Treeview(self.table_frame, columns=columns, show="headings")
         
@@ -168,16 +154,25 @@ class DoctorsView(ctk.CTkFrame):
             self.lbl_error.configure(text="Required: First Name, Last Name, Speciality")
             return
             
-        if self.selected_doctor_id:
-            Doctor.update(self.selected_doctor_id, fname, lname, spec, phone, email)
-        else:
-            Doctor.add(fname, lname, spec, phone, email)
+        if email and not re.match(r"^[\w\.\+\-]+\@[\w]+\.[a-z]{2,}$", email):
+            self.lbl_error.configure(text="Invalid email format.")
+            return
             
-        self.clear_form()
-        self.refresh_data()
+        if self.selected_doctor_id:
+            success = Doctor.update(self.selected_doctor_id, fname, lname, spec, phone, email)
+        else:
+            success = Doctor.add(fname, lname, spec, phone, email)
+            
+        if success:
+            self.clear_form()
+            self.refresh_data()
+        else:
+            self.lbl_error.configure(text="Failed to save. Check DB or duplicates.")
 
     def delete_doctor(self):
-        if not self.selected_doctor_id: return
+        if not self.selected_doctor_id:
+            messagebox.showwarning("Warning", "Please select a doctor to delete.")
+            return
         if messagebox.askyesno("Confirm", "Delete this doctor?"):
             Doctor.delete(self.selected_doctor_id)
             self.clear_form()
@@ -186,12 +181,15 @@ class DoctorsView(ctk.CTkFrame):
     def export_csv(self):
         file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
         if not file_path: return
-        with open(file_path, 'w', newline='') as file:
-            writer = csv.writer(file)
-            writer.writerow(["ID", "First Name", "Last Name", "Speciality", "Phone", "Email"])
-            for child in self.tree.get_children():
-                writer.writerow(self.tree.item(child)["values"])
-        messagebox.showinfo("Success", "Data exported.")
+        try:
+            with open(file_path, 'w', newline='') as file:
+                writer = csv.writer(file)
+                writer.writerow(["ID", "First Name", "Last Name", "Speciality", "Phone", "Email"])
+                for child in self.tree.get_children():
+                    writer.writerow(self.tree.item(child)["values"])
+            messagebox.showinfo("Success", "Data exported.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to export: {e}")
 
     def sort_treeview(self, col):
         items = [(self.tree.set(k, col), k) for k in self.tree.get_children("")]
@@ -200,7 +198,7 @@ class DoctorsView(ctk.CTkFrame):
         for index, (_, k) in enumerate(items): self.tree.move(k, "", index)
         self.sort_reverse = not self.sort_reverse
         
-        # Add sort icon
+        
         for c in self.tree["columns"]:
             original_text = self.tree.heading(c, "text").replace(" ▲", "").replace(" ▼", "")
             if c == col:

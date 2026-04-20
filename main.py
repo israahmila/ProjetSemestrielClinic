@@ -2,7 +2,7 @@ import customtkinter as ctk
 import sys
 import os
 
-# Ensure the app can import modules properly
+
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from views.login_view import LoginView
@@ -12,17 +12,18 @@ from views.doctors_view import DoctorsView
 from views.appointments_view import AppointmentsView
 from views.prescriptions_view import PrescriptionsView
 
-# Set application appearance
+from theme import *
+from tkinter import ttk
+
 ctk.set_appearance_mode("Dark")
 
-# Colors from React theme
-C_BG_BASE = '#0A0E27'
-C_BG_CARD = '#0F172A'
-C_PRIMARY = '#0EA5E9'
-C_PRIMARY_HOVER = '#0284C7'
-C_TEXT_PRIMARY = '#F1F5F9'
-C_TEXT_MUTED = '#94A3B8'
-C_BORDER = '#1E293B'
+def init_global_style():
+    style = ttk.Style()
+    style.theme_use("default")
+    style.configure("Treeview", background=C_BG_CARD, foreground=C_TEXT_PRIMARY, rowheight=35, fieldbackground=C_BG_CARD, borderwidth=0, font=('Helvetica', 12))
+    style.map("Treeview", background=[('selected', C_PRIMARY)], foreground=[('selected', C_TEXT_PRIMARY)])
+    style.configure("Treeview.Heading", background=C_BG_BASE, foreground=C_TEXT_MUTED, relief="flat", font=('Helvetica', 12, 'bold'))
+    style.map("Treeview.Heading", background=[('active', C_BORDER)])
 
 class App(ctk.CTk):
     def __init__(self, username, role):
@@ -32,15 +33,15 @@ class App(ctk.CTk):
         self.minsize(1100, 750)
         self.configure(fg_color=C_BG_BASE)
         
+        init_global_style()
+        
         self.username = username
         self.role = role
         self.active_button = None
         
-        # Grid layout (1 row, 2 columns)
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
         
-        # Sidebar
         self.sidebar = ctk.CTkFrame(self, width=220, corner_radius=0, fg_color=C_BG_CARD, border_width=1, border_color=C_BORDER)
         self.sidebar.grid(row=0, column=0, sticky="nsew")
         self.sidebar.grid_rowconfigure(7, weight=1) # push spacer
@@ -48,7 +49,6 @@ class App(ctk.CTk):
         self.logo_label = ctk.CTkLabel(self.sidebar, text="🏥 Clinic Admin", font=ctk.CTkFont(size=22, weight="bold"), text_color=C_TEXT_PRIMARY)
         self.logo_label.grid(row=0, column=0, padx=20, pady=(24, 24))
         
-        # Sidebar Buttons
         self.buttons = {}
         
         self.btn_dashboard = self.create_nav_button("📊 Dashboard", "dashboard")
@@ -73,23 +73,19 @@ class App(ctk.CTk):
                                         border_width=1, border_color=C_PRIMARY, text_color=C_PRIMARY, hover_color=C_BG_BASE)
         self.btn_logout.grid(row=8, column=0, padx=20, pady=24)
         
-        # Main Frame area
         self.main_frame = ctk.CTkFrame(self, corner_radius=0, fg_color="transparent")
         self.main_frame.grid(row=0, column=1, sticky="nsew", padx=24, pady=24)
         self.main_frame.grid_rowconfigure(0, weight=1)
         self.main_frame.grid_columnconfigure(0, weight=1)
         
-        # Dictionary to store views
         self.views = {}
         
-        # Initialize views
         self.views["dashboard"] = DashboardView(self.main_frame, self)
         self.views["patients"] = PatientsView(self.main_frame, self)
         self.views["doctors"] = DoctorsView(self.main_frame, self)
         self.views["appointments"] = AppointmentsView(self.main_frame, self)
         self.views["prescriptions"] = PrescriptionsView(self.main_frame, self)
         
-        # Place all views in the same grid spot
         for view in self.views.values():
             view.grid(row=0, column=0, sticky="nsew")
             
@@ -104,14 +100,12 @@ class App(ctk.CTk):
         return btn
 
     def show_view(self, name):
-        # Update active button styles
         for v_name, btn in self.buttons.items():
             if v_name == name:
                 btn.configure(fg_color=C_PRIMARY, text_color=C_TEXT_PRIMARY, hover_color=C_PRIMARY_HOVER)
             else:
                 btn.configure(fg_color="transparent", text_color=C_TEXT_MUTED, hover_color=C_BG_BASE)
                 
-        # Refresh data when showing view
         view = self.views[name]
         if hasattr(view, "refresh_data"):
             view.refresh_data()
